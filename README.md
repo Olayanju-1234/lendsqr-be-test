@@ -11,6 +11,7 @@ Built with NestJS 12, TypeScript, Knex and PostgreSQL 18. Hosted on Render.
 
 - [Setup](#setup)
 - [API](#api)
+- [Database design](#database-design)
 - [Design decisions](#design-decisions)
   - [Reconciliation](#reconciliation)
 - [Trade-offs and what I would do next](#trade-offs-and-what-i-would-do-next)
@@ -161,6 +162,80 @@ for i in 1 2; do
     -H 'content-type: application/json' -d "{\"recipientWalletId\":\"$BOB_WALLET\",\"amount\":2500}" | grep -i "HTTP/\|idempotent-replayed\|balanceAfter"
 done
 ```
+
+## Database design
+
+Five tables, all created by one migration (`src/database/migrations/20261027000000_initial_schema.ts`). Money columns are `bigint` in kobo.
+
+```mermaid
+erDiagram
+    users |o--o| wallets : owns
+    users ||--o{ transactions : initiates
+    users ||--o{ idempotency_keys : claims
+    transactions ||--|{ ledger_entries : "debit and credit"
+    wallets ||--o{ ledger_entries : records
+
+    users {
+        uuid id PK
+        varchar email UK
+        varchar phone_number UK
+        varchar first_name
+        varchar last_name
+        varchar password_hash
+        enum status "active or blocked"
+        varchar blocked_reason
+        timestamptz blocked_at
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    wallets {
+        uuid id PK
+        uuid user_id FK, UK "null only for the funding wallet"
+        enum type "user or funding"
+        char currency "NGN"
+        bigint balance "cached sum of ledger_entries.amount"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    transactions {
+        uuid id PK
+        enum type "deposit or transfer"
+        bigint amount "always positive"
+        char currency
+        varchar description
+        uuid initiated_by FK
+        timestamptz created_at
+    }
+    ledger_entries {
+        bigint id PK
+        uuid transaction_id FK
+        uuid wallet_id FK
+        bigint amount "negative debit, positive credit"
+        bigint balance_after
+        timestamptz created_at
+    }
+    idempotency_keys {
+        bigint id PK
+        uuid user_id FK
+        varchar key
+        varchar request_hash
+        jsonb response_body
+        timestamptz created_at
+    }
+```
+
+The rules that matter are enforced by the database, not only by the service code:
+
+| Constraint                                                              | Why                                                                                                                                         |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `wallets_user_balance_non_negative`: `type <> 'user' OR balance >= 0`   | A user wallet can never go negative, even if application code has a bug. The funding wallet is exempt because deposits are debited from it. |
+| `wallets_owner_matches_type`: `(type = 'user') = (user_id IS NOT NULL)` | Every user wallet has an owner and the funding wallet has none.                                                                             |
+| `wallets.user_id` unique                                                | One wallet per user.                                                                                                                        |
+| `users.email` and `users.phone_number` unique                           | Duplicate signups fail with `409` even when two arrive at the same moment.                                                                  |
+| `transactions_amount_positive` and `ledger_entries_amount_non_zero`     | No zero or negative movements reach the ledger.                                                                                             |
+| `idempotency_keys` unique on `(user_id, key)`                           | When two requests race with the same key, the database picks the winner. `request_hash` rejects a reused key sent with a different body.    |
+
+The migration also seeds the funding wallet with a fixed id. `ledger_entries` has an index on `(wallet_id, id)` for keyset pagination of a wallet's history and one on `transaction_id` for reconciliation.
 
 ## Design decisions
 
