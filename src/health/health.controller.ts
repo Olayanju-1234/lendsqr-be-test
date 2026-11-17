@@ -10,7 +10,7 @@ export class HealthController {
   root(): { name: string; docs: string } {
     return {
       name: 'Lendsqr wallet service',
-      docs: 'https://github.com/Olayanju-1234/lendsqr-wallet-service#api',
+      docs: 'https://github.com/Olayanju-1234/lendsqr-be-test#api',
     };
   }
 

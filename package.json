@@ -1,5 +1,5 @@
 {
-  "name": "lendsqr-wallet-service",
+  "name": "lendsqr-be-test",
   "version": "0.0.1",
   "description": "Wallet service for the Lendsqr fullstack assessment: accounts, blacklist checks, block/unblock and concurrency-safe transfers.",
   "author": "Joseph Olayanju",

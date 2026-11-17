@@ -4,7 +4,7 @@ A wallet service that creates user accounts, checks them against a blacklist, le
 
 Built with NestJS 12, TypeScript, Knex and PostgreSQL 18. Hosted on Render.
 
-- **Live URL:** https://lendsqr-wallet-service-wg2b.onrender.com (free tier: the first request after 15 idle minutes takes about a minute)
+- **Live URL:** https://joseph-olayanju-lendsqr-be-test.onrender.com (free tier: the first request after 15 idle minutes takes about a minute)
 - **Health:** `GET /health`
 
 ## Contents
@@ -22,8 +22,8 @@ Built with NestJS 12, TypeScript, Knex and PostgreSQL 18. Hosted on Render.
 Requirements: Node 24, Docker.
 
 ```bash
-git clone https://github.com/Olayanju-1234/lendsqr-wallet-service.git
-cd lendsqr-wallet-service
+git clone https://github.com/Olayanju-1234/lendsqr-be-test.git
+cd lendsqr-be-test
 npm ci
 cp .env.example .env        # then set JWT_SECRET and ADMIN_API_KEY; the app refuses to start with the placeholders
 docker compose up -d --wait  # Postgres 18 on localhost:5433 with the wallet and wallet_test databases
@@ -143,7 +143,7 @@ Responses: `201` created, `400` validation error (unknown fields are rejected to
 ### Quick walkthrough with curl
 
 ```bash
-BASE=https://lendsqr-wallet-service-wg2b.onrender.com
+BASE=https://joseph-olayanju-lendsqr-be-test.onrender.com
 
 # 1. Two users (random suffix so the walkthrough can be run more than once)
 N=$RANDOM
